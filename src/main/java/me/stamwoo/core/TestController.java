@@ -14,10 +14,10 @@ public class TestController {
 
     @MyRequestMapping("/doTest")
     public void test1(HttpServletRequest request, HttpServletResponse response,
-                      @MyRequestParam("param") String param) {
-        System.out.println(param);
+                      @MyRequestParam("param") String param, @MyRequestParam("param2") String param2) {
+        System.out.println(param + " : " + param2);
         try {
-            response.getWriter().write("doTest method success! param:" + param);
+            response.getWriter().write("doTest method success! param:" + param + ",param2:" + param2);
         } catch (IOException e) {
             e.printStackTrace();
         }

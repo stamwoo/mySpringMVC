@@ -2,6 +2,7 @@ package me.stamwoo.servlet;
 
 import me.stamwoo.annotation.MyController;
 import me.stamwoo.annotation.MyRequestMapping;
+import me.stamwoo.annotation.MyRequestParam;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -13,6 +14,7 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
+import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.util.*;
@@ -68,6 +70,7 @@ public class MyDispatcherServlet extends HttpServlet {
 
         String requestURI = httpServletRequest.getRequestURI();
         String contextPath = httpServletRequest.getContextPath();
+
         LOGGER.info("requestURI:{},contextPath:{}", requestURI, contextPath);
 
         requestURI = requestURI.replace(contextPath, "").replaceAll("/+", "/");
@@ -82,10 +85,13 @@ public class MyDispatcherServlet extends HttpServlet {
         //获取方法的参数列表
         Class<?>[] parameterTypes = method.getParameterTypes();
 
+        //获取方法的注解二维数组
+        Annotation[][] parameterAnnotations = method.getParameterAnnotations();
+
         //获取请求的参数
         Map<String, String[]> parameterMap = httpServletRequest.getParameterMap();
 
-        LOGGER.info("parametrMap:{}", parameterMap);
+        LOGGER.info("parametrMap:{}", parameterMap.toString());
 
         //保存参数值
         Object[] paramValues = new Object[parameterTypes.length];
@@ -95,6 +101,7 @@ public class MyDispatcherServlet extends HttpServlet {
             //根据参数名称，做某些处理
             String requestParam = parameterTypes[i].getSimpleName();
 
+            Annotation[] parameterAnnotation = parameterAnnotations[i];
 
             if (requestParam.equals("HttpServletRequest")) {
                 //参数类型已明确，这边强转类型
@@ -105,11 +112,17 @@ public class MyDispatcherServlet extends HttpServlet {
                 paramValues[i] = httpServletResponse;
                 continue;
             }
-            if (requestParam.equals("String")) {
-                for (Map.Entry<String, String[]> param : parameterMap.entrySet()) {
-                    String value = Arrays.toString(param.getValue()).replaceAll("\\[|\\]", "").replaceAll(",\\s", ",");
-                    paramValues[i] = value;
+            if (requestParam.equals("String")
+                    && parameterAnnotation.length != 0) {
+
+                for (Annotation annotation : parameterAnnotation) {
+                    if (annotation instanceof MyRequestParam) {
+                        MyRequestParam myRequestParam = (MyRequestParam) annotation;
+                        String value = myRequestParam.value();
+                        paramValues[i] = Arrays.toString(parameterMap.get(value)).replaceAll("\\[|\\]", "").replaceAll(",\\s", ",");
+                    }
                 }
+
             }
         }
 
